@@ -18,7 +18,6 @@ public class VideoCompressor {
     public static final int COMPRESS_QUALITY_MEDIUM = 2;
     public static final int COMPRESS_QUALITY_LOW = 3;
     private static volatile VideoCompressor Instance = null;
-    private String path;
 
     public static VideoCompressor getInstance() {
         VideoCompressor localInstance = Instance;
@@ -34,7 +33,7 @@ public class VideoCompressor {
     }
 
     @SuppressLint("WrongConstant")
-    private long readAndWriteTrack(MediaExtractor extractor, MP4Builder mediaMuxer, MediaCodec.BufferInfo info, long start, long end, File file, boolean isAudio) throws Exception {
+    private long readAndWriteTrack(MediaExtractor extractor, MP4Builder mediaMuxer, MediaCodec.BufferInfo info, long start, long end, boolean isAudio) throws Exception {
         int trackIndex = selectTrack(extractor, isAudio);
         if (trackIndex >= 0) {
             extractor.selectTrack(trackIndex);
@@ -112,9 +111,8 @@ public class VideoCompressor {
      * @return
      */
     public boolean compress(final String sourcePath, String destinationPath, int quality, CompressProgressListener listener) {
-        this.path = sourcePath;
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-        retriever.setDataSource(path);
+        retriever.setDataSource(sourcePath);
         String width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
         String height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
         String rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
@@ -169,7 +167,7 @@ public class VideoCompressor {
         }
 
 
-        File inputFile = new File(path);
+        File inputFile = new File(sourcePath);
         if (!inputFile.canRead()) {
             return false;
         }
@@ -431,13 +429,13 @@ public class VideoCompressor {
                         }
                     }
                 } else {
-                    long videoTime = readAndWriteTrack(extractor, mediaMuxer, info, startTime, endTime, cacheFile, false);
+                    long videoTime = readAndWriteTrack(extractor, mediaMuxer, info, startTime, endTime,  false);
                     if (videoTime != -1) {
                         videoStartTime = videoTime;
                     }
                 }
                 if (!error) {
-                    readAndWriteTrack(extractor, mediaMuxer, info, videoStartTime, endTime, cacheFile, true);
+                    readAndWriteTrack(extractor, mediaMuxer, info, videoStartTime, endTime,  true);
                 }
             } catch (Exception e) {
                 error = true;
@@ -458,10 +456,9 @@ public class VideoCompressor {
         } else {
             return false;
         }
-        Log.e("视频信息path：", path + "");
+        Log.e("视频信息path：", sourcePath + "");
         Log.e("视频信息path：", cacheFile.getPath() + "");
         Log.e("视频信息path：", inputFile.getPath() + "");
-
         return true;
     }
 
