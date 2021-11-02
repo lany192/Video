@@ -53,7 +53,10 @@ public class VideoCompress {
 
         @Override
         protected Boolean doInBackground(String... paths) {
-            return VideoController.getInstance().convertVideo(paths[0], paths[1], mQuality, VideoCompressTask.this::publishProgress);
+            String sourcePath = paths[0];
+            String destinationPath = paths[1];
+            //处理压缩
+            return VideoController.getInstance().compress(sourcePath, destinationPath, mQuality, VideoCompressTask.this::publishProgress);
         }
 
         @Override

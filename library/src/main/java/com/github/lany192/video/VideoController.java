@@ -16,7 +16,7 @@ public class VideoController {
     public final static String MIME_TYPE = "video/avc";
     public static final int COMPRESS_QUALITY_HIGH = 1;
     public static final int COMPRESS_QUALITY_MEDIUM = 2;
-    public  static final int COMPRESS_QUALITY_LOW = 3;
+    public static final int COMPRESS_QUALITY_LOW = 3;
     private static volatile VideoController Instance = null;
     public String path;
 
@@ -111,9 +111,8 @@ public class VideoController {
      * @param destinationPath the destination directory where compressed video is eventually saved
      * @return
      */
-    public boolean convertVideo(final String sourcePath, String destinationPath, int quality, CompressProgressListener listener) {
+    public boolean compress(final String sourcePath, String destinationPath, int quality, CompressProgressListener listener) {
         this.path = sourcePath;
-
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         retriever.setDataSource(path);
         String width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
