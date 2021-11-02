@@ -7,7 +7,7 @@ android {
 
     defaultConfig {
         applicationId "com.github.lany192.video.sample"
-        minSdk 21
+        minSdk 19
         targetSdk 31
         versionCode 1
         versionName "1.0"
