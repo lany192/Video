@@ -19,7 +19,6 @@ public class VideoController {
     static final int COMPRESS_QUALITY_LOW = 3;
     private static volatile VideoController Instance = null;
     public String path;
-    private boolean videoConvertFirstWrite = true;
 
     public static VideoController getInstance() {
         VideoController localInstance = Instance;
@@ -32,13 +31,6 @@ public class VideoController {
             }
         }
         return localInstance;
-    }
-
-    private void didWriteData(final boolean last, final boolean error) {
-        final boolean firstWrite = videoConvertFirstWrite;
-        if (firstWrite) {
-            videoConvertFirstWrite = false;
-        }
     }
 
     @SuppressLint("WrongConstant")
@@ -180,11 +172,9 @@ public class VideoController {
 
         File inputFile = new File(path);
         if (!inputFile.canRead()) {
-            didWriteData(true, true);
             return false;
         }
 
-        videoConvertFirstWrite = true;
         boolean error = false;
         long videoStartTime = startTime;
 
@@ -323,7 +313,6 @@ public class VideoController {
                                         if (info.size > 1) {
                                             if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
                                                 if (mediaMuxer.writeSampleData(videoTrackIndex, encodedData, info, false)) {
-                                                    didWriteData(false, false);
                                                 }
                                             } else if (videoTrackIndex == -5) {
                                                 byte[] csd = new byte[info.size];
@@ -468,11 +457,8 @@ public class VideoController {
                 Log.e("tmessages", "time = " + (System.currentTimeMillis() - time));
             }
         } else {
-            didWriteData(true, true);
             return false;
         }
-        didWriteData(true, error);
-
         Log.e("视频信息path：", path + "");
         Log.e("视频信息path：", cacheFile.getPath() + "");
         Log.e("视频信息path：", inputFile.getPath() + "");
