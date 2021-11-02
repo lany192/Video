@@ -1,22 +1,24 @@
 package com.github.lany192.video.sample;
 
-import android.content.pm.ActivityInfo;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.lany192.video.VideoCompress;
-import com.zhihu.matisse.Matisse;
-import com.zhihu.matisse.MimeType;
+import com.huantansheng.easyphotos.EasyPhotos;
+import com.huantansheng.easyphotos.constant.Type;
+import com.huantansheng.easyphotos.models.album.entity.Photo;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -42,22 +44,16 @@ public class MainActivity extends AppCompatActivity {
         Button btn_compress = (Button) findViewById(R.id.btn_compress);
         Button btn_select = (Button) findViewById(R.id.btn_select);
 
-        btn_select.setOnClickListener(view -> Matisse.from(this)
-                .choose(MimeType.ofVideo())
-                .countable(true)
-                .maxSelectable(9)
-                .gridExpectedSize(10)
-                .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
-                .thumbnailScale(0.85f)
-                .imageEngine(new GlideEngine())
-                .showPreview(false) // Default is `true`
-                .forResult(result -> {
-                    if (result.getResultCode() == RESULT_OK) {
-                        Log.i("OnActivityResult ", String.valueOf(Matisse.obtainOriginalState(result.getData())));
-//                                inputPath = Util.getFilePath(this, data.getData());
-//                                tv_input.setText(inputPath);
-                    }
-                }));
+        btn_select.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                EasyPhotos.createAlbum(MainActivity.this, true, true, GlideEngine.getInstance())
+                        .setFileProviderAuthority("com.huantansheng.easyphotos.demo.fileprovider")
+                        .setCount(9)
+                        .filter(Type.VIDEO)
+                        .start(101);
+            }
+        });
 
         btn_compress.setOnClickListener(view -> {
             String destPath = tv_output.getText().toString() + File.separator + "VID_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".mp4";
@@ -100,4 +96,30 @@ public class MainActivity extends AppCompatActivity {
         });
         tv_output.setText(outputDir);
     }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (RESULT_OK == resultCode) {
+            //相机或相册回调
+            if (requestCode == 101) {
+                //返回对象集合：如果你需要了解图片的宽、高、大小、用户是否选中原图选项等信息，可以用这个
+                ArrayList<Photo> resultPhotos =
+                        data.getParcelableArrayListExtra(EasyPhotos.RESULT_PHOTOS);
+
+                //返回图片地址集合时如果你需要知道用户选择图片时是否选择了原图选项，用如下方法获取
+                boolean selectedOriginal =
+                        data.getBooleanExtra(EasyPhotos.RESULT_SELECTED_ORIGINAL, false);
+
+                                                inputPath = resultPhotos.get(0).path;
+                                                tv_input.setText(inputPath);
+
+
+            }
+        } else if (RESULT_CANCELED == resultCode) {
+            Toast.makeText(getApplicationContext(), "cancel", Toast.LENGTH_SHORT).show();
+        }
+    }
+
 }
