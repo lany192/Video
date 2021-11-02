@@ -46,22 +46,6 @@ public class VideoController {
         return localInstance;
     }
 
-
-    public static int selectColorFormat(MediaCodecInfo codecInfo, String mimeType) {
-        MediaCodecInfo.CodecCapabilities capabilities = codecInfo.getCapabilitiesForType(mimeType);
-        int lastColorFormat = 0;
-        for (int i = 0; i < capabilities.colorFormats.length; i++) {
-            int colorFormat = capabilities.colorFormats[i];
-            if (isRecognizedFormat(colorFormat)) {
-                lastColorFormat = colorFormat;
-                if (!(codecInfo.getName().equals("OMX.SEC.AVC.Encoder") && colorFormat == 19)) {
-                    return colorFormat;
-                }
-            }
-        }
-        return lastColorFormat;
-    }
-
     private static boolean isRecognizedFormat(int colorFormat) {
         switch (colorFormat) {
             case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar:
@@ -75,60 +59,12 @@ public class VideoController {
         }
     }
 
-    public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
-
-    public static MediaCodecInfo selectCodec(String mimeType) {
-        int numCodecs = MediaCodecList.getCodecCount();
-        MediaCodecInfo lastCodecInfo = null;
-        for (int i = 0; i < numCodecs; i++) {
-            MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(i);
-            if (!codecInfo.isEncoder()) {
-                continue;
-            }
-            String[] types = codecInfo.getSupportedTypes();
-            for (String type : types) {
-                if (type.equalsIgnoreCase(mimeType)) {
-                    lastCodecInfo = codecInfo;
-                    if (!lastCodecInfo.getName().equals("OMX.SEC.avc.enc")) {
-                        return lastCodecInfo;
-                    } else if (lastCodecInfo.getName().equals("OMX.SEC.AVC.Encoder")) {
-                        return lastCodecInfo;
-                    }
-                }
-            }
-        }
-        return lastCodecInfo;
-    }
-
-    public static void copyFile(File src, File dst) throws IOException {
-        FileChannel inChannel = new FileInputStream(src).getChannel();
-        FileChannel outChannel = new FileOutputStream(dst).getChannel();
-        try {
-            inChannel.transferTo(1, inChannel.size(), outChannel);
-        } finally {
-            if (inChannel != null)
-                inChannel.close();
-            if (outChannel != null)
-                outChannel.close();
-        }
-    }
 
     private void didWriteData(final boolean last, final boolean error) {
         final boolean firstWrite = videoConvertFirstWrite;
         if (firstWrite) {
             videoConvertFirstWrite = false;
         }
-    }
-
-    /**
-     * Background conversion for queueing tasks
-     *
-     * @param path source file to compress
-     * @param dest destination directory to put result
-     */
-
-    public void scheduleVideoConvert(String path, String dest) {
-        startVideoConvertFromQueue(path, dest);
     }
 
     private void startVideoConvertFromQueue(String path, String dest) {
@@ -258,7 +194,6 @@ public class VideoController {
                 break;
         }
 
-        int rotateRender = 0;
 
         File cacheFile = new File(destinationPath);
 
@@ -268,16 +203,13 @@ public class VideoController {
                 resultHeight = resultWidth;
                 resultWidth = temp;
                 rotationValue = 0;
-                rotateRender = 270;
             } else if (rotationValue == 180) {
-                rotateRender = 180;
                 rotationValue = 0;
             } else if (rotationValue == 270) {
                 int temp = resultHeight;
                 resultHeight = resultWidth;
                 resultWidth = temp;
                 rotationValue = 0;
-                rotateRender = 90;
             }
         }
 
@@ -335,18 +267,15 @@ public class VideoController {
 
                             int resultHeightAligned = resultHeight;
                             int padding = 0;
-                            int bufferSize = resultWidth * resultHeight * 3 / 2;
                             if (processorType == PROCESSOR_TYPE_OTHER) {
                                 if (resultHeight % 16 != 0) {
                                     resultHeightAligned += (16 - (resultHeight % 16));
                                     padding = resultWidth * (resultHeightAligned - resultHeight);
-                                    bufferSize += padding * 5 / 4;
                                 }
                             } else if (processorType == PROCESSOR_TYPE_QCOM) {
                                 if (!manufacturer.equalsIgnoreCase("lge")) {
                                     int uvoffset = (resultWidth * resultHeight + 2047) & ~2047;
                                     padding = uvoffset - (resultWidth * resultHeight);
-                                    bufferSize += padding;
                                 }
                             } else if (processorType == PROCESSOR_TYPE_TI) {
                                 //resultHeightAligned = 368;
@@ -358,7 +287,6 @@ public class VideoController {
                                 if (manufacturer.equals("baidu")) {
                                     resultHeightAligned += (16 - (resultHeight % 16));
                                     padding = resultWidth * (resultHeightAligned - resultHeight);
-                                    bufferSize += padding * 5 / 4;
                                 }
                             }
 
