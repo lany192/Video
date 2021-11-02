@@ -12,21 +12,21 @@ import android.util.Log;
 import java.io.File;
 import java.nio.ByteBuffer;
 
-public class VideoController {
+public class VideoCompressor {
     public final static String MIME_TYPE = "video/avc";
     public static final int COMPRESS_QUALITY_HIGH = 1;
     public static final int COMPRESS_QUALITY_MEDIUM = 2;
     public static final int COMPRESS_QUALITY_LOW = 3;
-    private static volatile VideoController Instance = null;
-    public String path;
+    private static volatile VideoCompressor Instance = null;
+    private String path;
 
-    public static VideoController getInstance() {
-        VideoController localInstance = Instance;
+    public static VideoCompressor getInstance() {
+        VideoCompressor localInstance = Instance;
         if (localInstance == null) {
-            synchronized (VideoController.class) {
+            synchronized (VideoCompressor.class) {
                 localInstance = Instance;
                 if (localInstance == null) {
-                    Instance = localInstance = new VideoController();
+                    Instance = localInstance = new VideoCompressor();
                 }
             }
         }
