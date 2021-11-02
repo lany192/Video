@@ -18,83 +18,11 @@ public class Compressor {
     public static final int COMPRESS_QUALITY_MEDIUM = 2;
     public static final int COMPRESS_QUALITY_LOW = 3;
 
-    @SuppressLint("WrongConstant")
-    private long readAndWriteTrack(MediaExtractor extractor, MP4Builder mediaMuxer, MediaCodec.BufferInfo info, long start, long end, boolean isAudio) throws Exception {
-        int trackIndex = selectTrack(extractor, isAudio);
-        if (trackIndex >= 0) {
-            extractor.selectTrack(trackIndex);
-            MediaFormat trackFormat = extractor.getTrackFormat(trackIndex);
-            int muxerTrackIndex = mediaMuxer.addTrack(trackFormat, isAudio);
-            int maxBufferSize = trackFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
-            boolean inputDone = false;
-            if (start > 0) {
-                extractor.seekTo(start, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-            } else {
-                extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-            }
-            ByteBuffer buffer = ByteBuffer.allocateDirect(maxBufferSize);
-            long startTime = -1;
-            while (!inputDone) {
-                boolean eof = false;
-                int index = extractor.getSampleTrackIndex();
-                if (index == trackIndex) {
-                    info.size = extractor.readSampleData(buffer, 0);
-                    if (info.size < 0) {
-                        info.size = 0;
-                        eof = true;
-                    } else {
-                        info.presentationTimeUs = extractor.getSampleTime();
-                        if (start > 0 && startTime == -1) {
-                            startTime = info.presentationTimeUs;
-                        }
-                        if (end < 0 || info.presentationTimeUs < end) {
-                            info.offset = 0;
-                            info.flags = extractor.getSampleFlags();
-                            if (mediaMuxer.writeSampleData(muxerTrackIndex, buffer, info, isAudio)) {
-                                // didWriteData(messageObject, file, false, false);
-                            }
-                            extractor.advance();
-                        } else {
-                            eof = true;
-                        }
-                    }
-                } else if (index == -1) {
-                    eof = true;
-                }
-                if (eof) {
-                    inputDone = true;
-                }
-            }
-            extractor.unselectTrack(trackIndex);
-            return startTime;
-        }
-        return -1;
-    }
-
-    private int selectTrack(MediaExtractor extractor, boolean audio) {
-        int numTracks = extractor.getTrackCount();
-        for (int i = 0; i < numTracks; i++) {
-            MediaFormat format = extractor.getTrackFormat(i);
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            if (audio) {
-                if (mime.startsWith("audio/")) {
-                    return i;
-                }
-            } else {
-                if (mime.startsWith("video/")) {
-                    return i;
-                }
-            }
-        }
-        return -5;
-    }
-
     /**
      * Perform the actual video compression. Processes the frames and does the magic
      *
      * @param sourcePath      the source uri for the file as per
      * @param destinationPath the destination directory where compressed video is eventually saved
-     * @return
      */
     public boolean compress(final String sourcePath, String destinationPath, int quality, CompressProgressListener listener) {
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
@@ -152,7 +80,6 @@ public class Compressor {
             }
         }
 
-
         File inputFile = new File(sourcePath);
         if (!inputFile.canRead()) {
             return false;
@@ -166,7 +93,6 @@ public class Compressor {
         if (resultWidth != 0 && resultHeight != 0) {
             MP4Builder mediaMuxer = null;
             MediaExtractor extractor = null;
-
             try {
                 MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
                 Mp4Movie movie = new Mp4Movie();
@@ -176,7 +102,6 @@ public class Compressor {
                 mediaMuxer = new MP4Builder().createMovie(movie);
                 extractor = new MediaExtractor();
                 extractor.setDataSource(inputFile.toString());
-
 
                 if (resultWidth != originalWidth || resultHeight != originalHeight) {
                     int videoIndex;
@@ -195,10 +120,6 @@ public class Compressor {
                             boolean decoderDone = false;
                             int videoTrackIndex = -5;
 
-                            int colorFormat;
-                            colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-                            Log.e("tmessages", "colorFormat = " + colorFormat);
-
                             extractor.selectTrack(videoIndex);
                             if (startTime > 0) {
                                 extractor.seekTo(startTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
@@ -208,7 +129,7 @@ public class Compressor {
                             MediaFormat inputFormat = extractor.getTrackFormat(videoIndex);
 
                             MediaFormat outputFormat = MediaFormat.createVideoFormat(MIME_TYPE, resultWidth, resultHeight);
-                            outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
+                            outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
                             outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
                             outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 25);
                             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 10);
@@ -231,7 +152,6 @@ public class Compressor {
                                 decoderInputBuffers = decoder.getInputBuffers();
                                 encoderOutputBuffers = encoder.getOutputBuffers();
                             }
-
                             while (!outputDone) {
                                 if (!inputDone) {
                                     boolean eof = false;
@@ -415,13 +335,13 @@ public class Compressor {
                         }
                     }
                 } else {
-                    long videoTime = readAndWriteTrack(extractor, mediaMuxer, info, startTime, endTime,  false);
+                    long videoTime = readAndWriteTrack(extractor, mediaMuxer, info, startTime, endTime, false);
                     if (videoTime != -1) {
                         videoStartTime = videoTime;
                     }
                 }
                 if (!error) {
-                    readAndWriteTrack(extractor, mediaMuxer, info, videoStartTime, endTime,  true);
+                    readAndWriteTrack(extractor, mediaMuxer, info, videoStartTime, endTime, true);
                 }
             } catch (Exception e) {
                 error = true;
@@ -446,6 +366,77 @@ public class Compressor {
         Log.e("视频信息path：", cacheFile.getPath() + "");
         Log.e("视频信息path：", inputFile.getPath() + "");
         return true;
+    }
+
+    @SuppressLint("WrongConstant")
+    private long readAndWriteTrack(MediaExtractor extractor, MP4Builder mediaMuxer, MediaCodec.BufferInfo info, long start, long end, boolean isAudio) throws Exception {
+        int trackIndex = selectTrack(extractor, isAudio);
+        if (trackIndex >= 0) {
+            extractor.selectTrack(trackIndex);
+            MediaFormat trackFormat = extractor.getTrackFormat(trackIndex);
+            int muxerTrackIndex = mediaMuxer.addTrack(trackFormat, isAudio);
+            int maxBufferSize = trackFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+            boolean inputDone = false;
+            if (start > 0) {
+                extractor.seekTo(start, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            } else {
+                extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            }
+            ByteBuffer buffer = ByteBuffer.allocateDirect(maxBufferSize);
+            long startTime = -1;
+            while (!inputDone) {
+                boolean eof = false;
+                int index = extractor.getSampleTrackIndex();
+                if (index == trackIndex) {
+                    info.size = extractor.readSampleData(buffer, 0);
+                    if (info.size < 0) {
+                        info.size = 0;
+                        eof = true;
+                    } else {
+                        info.presentationTimeUs = extractor.getSampleTime();
+                        if (start > 0 && startTime == -1) {
+                            startTime = info.presentationTimeUs;
+                        }
+                        if (end < 0 || info.presentationTimeUs < end) {
+                            info.offset = 0;
+                            info.flags = extractor.getSampleFlags();
+                            if (mediaMuxer.writeSampleData(muxerTrackIndex, buffer, info, isAudio)) {
+                                // didWriteData(messageObject, file, false, false);
+                            }
+                            extractor.advance();
+                        } else {
+                            eof = true;
+                        }
+                    }
+                } else if (index == -1) {
+                    eof = true;
+                }
+                if (eof) {
+                    inputDone = true;
+                }
+            }
+            extractor.unselectTrack(trackIndex);
+            return startTime;
+        }
+        return -1;
+    }
+
+    private int selectTrack(MediaExtractor extractor, boolean audio) {
+        int numTracks = extractor.getTrackCount();
+        for (int i = 0; i < numTracks; i++) {
+            MediaFormat format = extractor.getTrackFormat(i);
+            String mime = format.getString(MediaFormat.KEY_MIME);
+            if (audio) {
+                if (mime.startsWith("audio/")) {
+                    return i;
+                }
+            } else {
+                if (mime.startsWith("video/")) {
+                    return i;
+                }
+            }
+        }
+        return -5;
     }
 
     public interface CompressProgressListener {
