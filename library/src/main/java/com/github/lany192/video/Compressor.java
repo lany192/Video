@@ -31,6 +31,7 @@ public class Compressor {
         String height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
         String rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
         long duration = Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) * 1000;
+        Log.i("原始视频信息", width + "*" + height + "," + rotation + "," + duration);
 
         long startTime = -1;
         long endTime = -1;
