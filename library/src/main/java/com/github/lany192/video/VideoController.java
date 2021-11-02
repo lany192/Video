@@ -17,13 +17,6 @@ public class VideoController {
     static final int COMPRESS_QUALITY_HIGH = 1;
     static final int COMPRESS_QUALITY_MEDIUM = 2;
     static final int COMPRESS_QUALITY_LOW = 3;
-    private final static int PROCESSOR_TYPE_OTHER = 0;
-    private final static int PROCESSOR_TYPE_QCOM = 1;
-    private final static int PROCESSOR_TYPE_INTEL = 2;
-    private final static int PROCESSOR_TYPE_MTK = 3;
-    private final static int PROCESSOR_TYPE_SEC = 4;
-    private final static int PROCESSOR_TYPE_TI = 5;
-    public static File cachedFile;
     private static volatile VideoController Instance = null;
     public String path;
     private boolean videoConvertFirstWrite = true;
@@ -41,29 +34,11 @@ public class VideoController {
         return localInstance;
     }
 
-    private static boolean isRecognizedFormat(int colorFormat) {
-        switch (colorFormat) {
-            case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar:
-            case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedPlanar:
-            case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar:
-            case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedSemiPlanar:
-            case MediaCodecInfo.CodecCapabilities.COLOR_TI_FormatYUV420PackedSemiPlanar:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-
     private void didWriteData(final boolean last, final boolean error) {
         final boolean firstWrite = videoConvertFirstWrite;
         if (firstWrite) {
             videoConvertFirstWrite = false;
         }
-    }
-
-    private void startVideoConvertFromQueue(String path, String dest) {
-        VideoConvertRunnable.runConversion(path, dest);
     }
 
     @SuppressLint("WrongConstant")
@@ -82,14 +57,11 @@ public class VideoController {
             }
             ByteBuffer buffer = ByteBuffer.allocateDirect(maxBufferSize);
             long startTime = -1;
-
             while (!inputDone) {
-
                 boolean eof = false;
                 int index = extractor.getSampleTrackIndex();
                 if (index == trackIndex) {
                     info.size = extractor.readSampleData(buffer, 0);
-
                     if (info.size < 0) {
                         info.size = 0;
                         eof = true;
@@ -116,13 +88,11 @@ public class VideoController {
                     inputDone = true;
                 }
             }
-
             extractor.unselectTrack(trackIndex);
             return startTime;
         }
         return -1;
     }
-
 
     private int selectTrack(MediaExtractor extractor, boolean audio) {
         int numTracks = extractor.getTrackCount();
@@ -149,7 +119,6 @@ public class VideoController {
      * @param destinationPath the destination directory where compressed video is eventually saved
      * @return
      */
-
     public boolean convertVideo(final String sourcePath, String destinationPath, int quality, CompressProgressListener listener) {
         this.path = sourcePath;
 
@@ -251,39 +220,11 @@ public class VideoController {
                             boolean outputDone = false;
                             boolean inputDone = false;
                             boolean decoderDone = false;
-                            int swapUV = 0;
                             int videoTrackIndex = -5;
 
                             int colorFormat;
-                            int processorType = PROCESSOR_TYPE_OTHER;
-                            String manufacturer = Build.MANUFACTURER.toLowerCase();
                             colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
                             Log.e("tmessages", "colorFormat = " + colorFormat);
-
-                            int resultHeightAligned = resultHeight;
-                            int padding = 0;
-                            if (processorType == PROCESSOR_TYPE_OTHER) {
-                                if (resultHeight % 16 != 0) {
-                                    resultHeightAligned += (16 - (resultHeight % 16));
-                                    padding = resultWidth * (resultHeightAligned - resultHeight);
-                                }
-                            } else if (processorType == PROCESSOR_TYPE_QCOM) {
-                                if (!manufacturer.equalsIgnoreCase("lge")) {
-                                    int uvoffset = (resultWidth * resultHeight + 2047) & ~2047;
-                                    padding = uvoffset - (resultWidth * resultHeight);
-                                }
-                            } else if (processorType == PROCESSOR_TYPE_TI) {
-                                //resultHeightAligned = 368;
-                                //bufferSize = resultWidth * resultHeightAligned * 3 / 2;
-                                //resultHeightAligned += (16 - (resultHeight % 16));
-                                //padding = resultWidth * (resultHeightAligned - resultHeight);
-                                //bufferSize += padding * 5 / 4;
-                            } else if (processorType == PROCESSOR_TYPE_MTK) {
-                                if (manufacturer.equals("baidu")) {
-                                    resultHeightAligned += (16 - (resultHeight % 16));
-                                    padding = resultWidth * (resultHeightAligned - resultHeight);
-                                }
-                            }
 
                             extractor.selectTrack(videoIndex);
                             if (startTime > 0) {
@@ -532,48 +473,14 @@ public class VideoController {
         }
         didWriteData(true, error);
 
-        cachedFile = cacheFile;
-
-        Log.e("ViratPath", path + "");
-        Log.e("ViratPath", cacheFile.getPath() + "");
-        Log.e("ViratPath", inputFile.getPath() + "");
+        Log.e("视频信息path：", path + "");
+        Log.e("视频信息path：", cacheFile.getPath() + "");
+        Log.e("视频信息path：", inputFile.getPath() + "");
 
         return true;
     }
 
     interface CompressProgressListener {
         void onProgress(float percent);
-    }
-
-    public static class VideoConvertRunnable implements Runnable {
-
-        private final String videoPath;
-        private final String destPath;
-
-        private VideoConvertRunnable(String videoPath, String destPath) {
-            this.videoPath = videoPath;
-            this.destPath = destPath;
-        }
-
-        public static void runConversion(final String videoPath, final String destPath) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        VideoConvertRunnable wrapper = new VideoConvertRunnable(videoPath, destPath);
-                        Thread th = new Thread(wrapper, "VideoConvertRunnable");
-                        th.start();
-                        th.join();
-                    } catch (Exception e) {
-                        Log.e("tmessages", e.getMessage());
-                    }
-                }
-            }).start();
-        }
-
-        @Override
-        public void run() {
-            VideoController.getInstance().convertVideo(videoPath, destPath, 0, null);
-        }
     }
 }
