@@ -95,10 +95,6 @@ public class InputSurface {
         return EGL14.eglSwapBuffers(mEGLDisplay, mEGLSurface);
     }
 
-    public Surface getSurface() {
-        return mSurface;
-    }
-
     public void setPresentationTime(long nsecs) {
         EGLExt.eglPresentationTimeANDROID(mEGLDisplay, mEGLSurface, nsecs);
     }

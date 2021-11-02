@@ -12,25 +12,11 @@ import android.util.Log;
 import java.io.File;
 import java.nio.ByteBuffer;
 
-public class VideoCompressor {
+public class Compressor {
     public final static String MIME_TYPE = "video/avc";
     public static final int COMPRESS_QUALITY_HIGH = 1;
     public static final int COMPRESS_QUALITY_MEDIUM = 2;
     public static final int COMPRESS_QUALITY_LOW = 3;
-    private static volatile VideoCompressor Instance = null;
-
-    public static VideoCompressor getInstance() {
-        VideoCompressor localInstance = Instance;
-        if (localInstance == null) {
-            synchronized (VideoCompressor.class) {
-                localInstance = Instance;
-                if (localInstance == null) {
-                    Instance = localInstance = new VideoCompressor();
-                }
-            }
-        }
-        return localInstance;
-    }
 
     @SuppressLint("WrongConstant")
     private long readAndWriteTrack(MediaExtractor extractor, MP4Builder mediaMuxer, MediaCodec.BufferInfo info, long start, long end, boolean isAudio) throws Exception {

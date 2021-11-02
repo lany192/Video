@@ -2,24 +2,24 @@ package com.github.lany192.video.sample;
 
 import android.os.AsyncTask;
 
-import com.github.lany192.video.VideoCompressor;
+import com.github.lany192.video.Compressor;
 
 public class VideoCompress {
 
     public static VideoCompressTask compressVideoHigh(String srcPath, String destPath, CompressListener listener) {
-        VideoCompressTask task = new VideoCompressTask(listener, VideoCompressor.COMPRESS_QUALITY_HIGH);
+        VideoCompressTask task = new VideoCompressTask(listener, Compressor.COMPRESS_QUALITY_HIGH);
         task.execute(srcPath, destPath);
         return task;
     }
 
     public static VideoCompressTask compressVideoMedium(String srcPath, String destPath, CompressListener listener) {
-        VideoCompressTask task = new VideoCompressTask(listener, VideoCompressor.COMPRESS_QUALITY_MEDIUM);
+        VideoCompressTask task = new VideoCompressTask(listener, Compressor.COMPRESS_QUALITY_MEDIUM);
         task.execute(srcPath, destPath);
         return task;
     }
 
     public static VideoCompressTask compressVideoLow(String srcPath, String destPath, CompressListener listener) {
-        VideoCompressTask task = new VideoCompressTask(listener, VideoCompressor.COMPRESS_QUALITY_LOW);
+        VideoCompressTask task = new VideoCompressTask(listener, Compressor.COMPRESS_QUALITY_LOW);
         task.execute(srcPath, destPath);
         return task;
     }
@@ -56,7 +56,8 @@ public class VideoCompress {
             String sourcePath = paths[0];
             String destinationPath = paths[1];
             //处理压缩
-            return VideoCompressor.getInstance().compress(sourcePath, destinationPath, mQuality, VideoCompressTask.this::publishProgress);
+            Compressor compressor = new Compressor();
+            return compressor.compress(sourcePath, destinationPath, mQuality, VideoCompressTask.this::publishProgress);
         }
 
         @Override
