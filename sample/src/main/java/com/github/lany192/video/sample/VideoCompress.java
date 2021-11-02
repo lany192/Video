@@ -1,6 +1,8 @@
-package com.github.lany192.video;
+package com.github.lany192.video.sample;
 
 import android.os.AsyncTask;
+
+import com.github.lany192.video.VideoController;
 
 public class VideoCompress {
 
@@ -51,7 +53,7 @@ public class VideoCompress {
 
         @Override
         protected Boolean doInBackground(String... paths) {
-            return VideoController.getInstance().convertVideo(paths[0], paths[1], mQuality, this::publishProgress);
+            return VideoController.getInstance().convertVideo(paths[0], paths[1], mQuality, VideoCompressTask.this::publishProgress);
         }
 
         @Override

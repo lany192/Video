@@ -14,9 +14,9 @@ import java.nio.ByteBuffer;
 
 public class VideoController {
     public final static String MIME_TYPE = "video/avc";
-    static final int COMPRESS_QUALITY_HIGH = 1;
-    static final int COMPRESS_QUALITY_MEDIUM = 2;
-    static final int COMPRESS_QUALITY_LOW = 3;
+    public static final int COMPRESS_QUALITY_HIGH = 1;
+    public static final int COMPRESS_QUALITY_MEDIUM = 2;
+    public  static final int COMPRESS_QUALITY_LOW = 3;
     private static volatile VideoController Instance = null;
     public String path;
 
@@ -466,7 +466,7 @@ public class VideoController {
         return true;
     }
 
-    interface CompressProgressListener {
+    public interface CompressProgressListener {
         void onProgress(float percent);
     }
 }
