@@ -3,14 +3,15 @@ package com.github.lany192.video.sample;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.github.lany192.video.Compressor;
+import com.github.lany192.video.sample.databinding.ActivityMainBinding;
 import com.huantansheng.easyphotos.EasyPhotos;
 import com.huantansheng.easyphotos.constant.Type;
 import com.huantansheng.easyphotos.models.album.entity.Photo;
@@ -21,28 +22,25 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
+
 public class MainActivity extends AppCompatActivity {
-    private TextView tv_input;
-    private TextView tv_output;
-    private TextView tv_indicator;
-    private TextView tv_progress;
     private String outputDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
     private String inputPath;
-    private ProgressBar pb_compress;
     private long startTime, endTime;
+    private ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        tv_input = (TextView) findViewById(R.id.tv_input);
-        tv_output = (TextView) findViewById(R.id.tv_output);
-        tv_indicator = (TextView) findViewById(R.id.tv_indicator);
-        tv_progress = (TextView) findViewById(R.id.tv_progress);
-        pb_compress = (ProgressBar) findViewById(R.id.pb_compress);
-        Button btn_compress = (Button) findViewById(R.id.btn_compress);
-        Button btn_select = (Button) findViewById(R.id.btn_select);
-        btn_select.setOnClickListener(new View.OnClickListener() {
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        binding.tvOutput.setText(outputDir);
+        binding.btnSelect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 EasyPhotos.createAlbum(MainActivity.this, true, true, new GlideEngine())
@@ -52,26 +50,42 @@ public class MainActivity extends AppCompatActivity {
                         .start(101);
             }
         });
+        binding.btnCompress.setOnClickListener(view -> {
+            String inputPath = binding.tvInput.getText().toString();
+            String outPath = binding.tvOutput.getText().toString() + File.separator + "VID_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".mp4";
+//
+//            Disposable disposable = Flowable.just(inputPath)
+//                .observeOn(Schedulers.io())
+//                .map(new Function<String, String>() {
+//                    @Override
+//                    public String apply(@NonNull String s) throws Exception {
+//                        //处理压缩
+//                        new Compressor().compress(sourcePath, destinationPath, mQuality, CompressTask.VideoCompressTask.this::publishProgress);
+//
+//                        return null;
+//                    }
+//                })
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .doOnError(throwable -> Log.e("TAG", throwable.getMessage()))
+//                .subscribe(new );
 
-        btn_compress.setOnClickListener(view -> {
-            String destPath = tv_output.getText().toString() + File.separator + "VID_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".mp4";
-            CompressTask.compressVideoMedium(tv_input.getText().toString(), destPath, new CompressTask.CompressListener() {
+            CompressTask.compressVideoMedium(inputPath, outPath, new CompressTask.CompressListener() {
                 @Override
                 public void onStart() {
-                    tv_indicator.setText("Compressing..." + "\n"
+                    binding.tvIndicator.setText("Compressing..." + "\n"
                             + "Start at: " + new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date()));
-                    pb_compress.setVisibility(View.VISIBLE);
+                    binding.pbCompress.setVisibility(View.VISIBLE);
                     startTime = System.currentTimeMillis();
                     Util.writeFile(MainActivity.this, "Start at: " + new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date()) + "\n");
                 }
 
                 @Override
                 public void onSuccess() {
-                    String previous = tv_indicator.getText().toString();
-                    tv_indicator.setText(previous + "\n"
+                    String previous = binding.tvIndicator.getText().toString();
+                    binding.tvIndicator.setText(previous + "\n"
                             + "Compress Success!" + "\n"
                             + "End at: " + new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date()));
-                    pb_compress.setVisibility(View.INVISIBLE);
+                    binding.pbCompress.setVisibility(View.INVISIBLE);
                     endTime = System.currentTimeMillis();
                     Util.writeFile(MainActivity.this, "End at: " + new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date()) + "\n");
                     Util.writeFile(MainActivity.this, "Total: " + ((endTime - startTime) / 1000) + "s" + "\n");
@@ -80,19 +94,18 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onFail() {
-                    tv_indicator.setText("Compress Failed!");
-                    pb_compress.setVisibility(View.INVISIBLE);
+                    binding.tvIndicator.setText("Compress Failed!");
+                    binding.pbCompress.setVisibility(View.INVISIBLE);
                     endTime = System.currentTimeMillis();
                     Util.writeFile(MainActivity.this, "Failed Compress!!!" + new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date()));
                 }
 
                 @Override
                 public void onProgress(float percent) {
-                    tv_progress.setText(percent + "%");
+                    binding.tvProgress.setText(percent + "%");
                 }
             });
         });
-        tv_output.setText(outputDir);
     }
 
     @Override
@@ -108,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
                 boolean selectedOriginal =
                         data.getBooleanExtra(EasyPhotos.RESULT_SELECTED_ORIGINAL, false);
                 inputPath = resultPhotos.get(0).path;
-                tv_input.setText(inputPath);
+                binding.tvInput.setText(inputPath);
             }
         } else if (RESULT_CANCELED == resultCode) {
             Toast.makeText(getApplicationContext(), "cancel", Toast.LENGTH_SHORT).show();
