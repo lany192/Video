@@ -51,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         binding.btnCompress.setOnClickListener(view -> {
-            String inputPath = binding.tvInput.getText().toString();
             String outPath = binding.tvOutput.getText().toString() + File.separator + "VID_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".mp4";
 //
 //            Disposable disposable = Flowable.just(inputPath)
