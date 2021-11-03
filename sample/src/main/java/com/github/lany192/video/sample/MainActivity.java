@@ -42,11 +42,10 @@ public class MainActivity extends AppCompatActivity {
         pb_compress = (ProgressBar) findViewById(R.id.pb_compress);
         Button btn_compress = (Button) findViewById(R.id.btn_compress);
         Button btn_select = (Button) findViewById(R.id.btn_select);
-
         btn_select.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                EasyPhotos.createAlbum(MainActivity.this, true, true, GlideEngine.getInstance())
+                EasyPhotos.createAlbum(MainActivity.this, true, true, new GlideEngine())
                         .setFileProviderAuthority("com.huantansheng.easyphotos.demo.fileprovider")
                         .setCount(9)
                         .filter(Type.VIDEO)
@@ -56,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
 
         btn_compress.setOnClickListener(view -> {
             String destPath = tv_output.getText().toString() + File.separator + "VID_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".mp4";
-            VideoCompress.compressVideoMedium(tv_input.getText().toString(), destPath, new VideoCompress.CompressListener() {
+            CompressTask.compressVideoMedium(tv_input.getText().toString(), destPath, new CompressTask.CompressListener() {
                 @Override
                 public void onStart() {
                     tv_indicator.setText("Compressing..." + "\n"
@@ -96,7 +95,6 @@ public class MainActivity extends AppCompatActivity {
         tv_output.setText(outputDir);
     }
 
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -106,15 +104,11 @@ public class MainActivity extends AppCompatActivity {
                 //返回对象集合：如果你需要了解图片的宽、高、大小、用户是否选中原图选项等信息，可以用这个
                 ArrayList<Photo> resultPhotos =
                         data.getParcelableArrayListExtra(EasyPhotos.RESULT_PHOTOS);
-
                 //返回图片地址集合时如果你需要知道用户选择图片时是否选择了原图选项，用如下方法获取
                 boolean selectedOriginal =
                         data.getBooleanExtra(EasyPhotos.RESULT_SELECTED_ORIGINAL, false);
-
-                                                inputPath = resultPhotos.get(0).path;
-                                                tv_input.setText(inputPath);
-
-
+                inputPath = resultPhotos.get(0).path;
+                tv_input.setText(inputPath);
             }
         } else if (RESULT_CANCELED == resultCode) {
             Toast.makeText(getApplicationContext(), "cancel", Toast.LENGTH_SHORT).show();

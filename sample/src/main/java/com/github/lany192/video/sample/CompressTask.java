@@ -4,7 +4,7 @@ import android.os.AsyncTask;
 
 import com.github.lany192.video.Compressor;
 
-public class VideoCompress {
+public class CompressTask {
 
     public static VideoCompressTask compressVideoHigh(String srcPath, String destPath, CompressListener listener) {
         VideoCompressTask task = new VideoCompressTask(listener, Compressor.COMPRESS_QUALITY_HIGH);
@@ -56,8 +56,7 @@ public class VideoCompress {
             String sourcePath = paths[0];
             String destinationPath = paths[1];
             //处理压缩
-            Compressor compressor = new Compressor();
-            return compressor.compress(sourcePath, destinationPath, mQuality, VideoCompressTask.this::publishProgress);
+            return new Compressor().compress(sourcePath, destinationPath, mQuality, VideoCompressTask.this::publishProgress);
         }
 
         @Override
